@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -102,3 +102,29 @@ def parse_search_query(search_query: str) -> dict:
                 # Skip malformed filters
                 continue
     return filters
+
+
+def resolve_foreign_keys(data: dict, foreign_key_fields: dict) -> dict:
+    """
+    Resolves foreign key fields in the provided data dictionary.
+
+    Args:
+        data (dict): The dictionary containing field values.
+        foreign_key_fields (dict): A mapping of foreign key field names to their model classes.
+
+    Returns:
+        dict: The updated data dictionary with resolved foreign key instances.
+    """
+    for fk_field, model_class in foreign_key_fields.items():
+        if fk_field in data:
+            fk_value = data.pop(fk_field)
+            if fk_value is not None:
+                try:
+                    # Retrieve the instance and assign it to the corresponding field
+                    data[fk_field[:-3]] = model_class.objects.get(pk=fk_value)
+                except ObjectDoesNotExist:
+                    raise ValueError(f"{model_class.__name__} with ID {fk_value} does not exist.")
+            else:
+                # Assign None to clear the relationship
+                data[fk_field[:-3]] = None
+    return data
