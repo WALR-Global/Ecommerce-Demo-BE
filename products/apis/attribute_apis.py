@@ -5,9 +5,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.utils import parse_search_query, get_paginated_response
-from products.selectors import tag_list, tag_get_by_slug, tag_get, attribute_list, attribute_get_by_slug, attribute_get
+from products.selectors import attribute_list, attribute_get_by_slug, attribute_get
+from products.serializers import AttributeValueSerializer
 from products.services.attribute_services import attribute_create, attribute_update, attribute_delete
-from products.services.tag_services import tag_create, tag_update, tag_delete
 from users.permissions import IsSuperAdminOrStoreOwner
 
 
@@ -22,6 +22,7 @@ class AttributeListApi(APIView):
         id = serializers.UUIDField(required=True)
         name = serializers.CharField(required=True)
         slug = serializers.CharField(required=True)
+        values = AttributeValueSerializer(many=True)
 
     def get(self, request):
         # Extract `search` query parameter
@@ -52,6 +53,7 @@ class AttributeDetailApi(APIView):
         slug = serializers.CharField(required=True)
         language = serializers.CharField(required=True)
         translated_languages = serializers.CharField(required=True)
+        values = AttributeValueSerializer(many=True)
 
     def get(self, request, slug):
         attribute = attribute_get_by_slug(slug)
@@ -87,10 +89,13 @@ class AttributeCreateApi(APIView):
 
 
 class AttributeUpdateApi(APIView):
+    class InputSerializer(serializers.Serializer):
+        name = serializers.CharField(required=True)
+        values = serializers.ListField(child=serializers.DictField(), default=list)
 
     @transaction.atomic
     def put(self, request, attribute_id):
-        serializer = AttributeCreateApi.InputSerializer(data=request.data)
+        serializer = self.InputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         attribute = attribute_get(attribute_id)

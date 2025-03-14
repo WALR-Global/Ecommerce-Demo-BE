@@ -58,8 +58,8 @@ def category_update(*, category: Category, data) -> Category:
     # Side-effect fields update here (e.g. username is generated based on first & last name)
 
     # ... some additional tasks with the user ...
-    if "updated_by" not in non_side_effect_fields:
-        category.save(update_fields=["updated_by"])
+    # if "updated_by" not in non_side_effect_fields:
+    #     category.save(update_fields=["updated_by"])
 
     return category
 

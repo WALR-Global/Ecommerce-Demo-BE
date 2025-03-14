@@ -4,7 +4,7 @@ from django.db.models import QuerySet
 
 from common.utils import get_object
 from products.filters import BaseCategoryFilter
-from products.models import Type, Tag, Category, Attribute, Manufacturer
+from products.models import Type, Tag, Category, Attribute, Manufacturer, Author, Product, AttributeValue
 
 
 def type_list(*, filters=None) -> QuerySet[Type]:
@@ -13,6 +13,13 @@ def type_list(*, filters=None) -> QuerySet[Type]:
     qs = Type.objects.all()
 
     return qs
+
+
+def type_get_by_slug(slug) -> Optional[Type]:
+    type_ = get_object(Type, slug=slug)
+
+    return type_
+
 
 def tag_list(*, filters=None) -> QuerySet[Tag]:
     filters = filters or {}
@@ -78,3 +85,48 @@ def manufacturer_list(*, filters=None) -> QuerySet[Manufacturer]:
     qs = Manufacturer.objects.all()
 
     return qs
+
+
+def manufacturer_get_by_slug(slug) -> Optional[Manufacturer]:
+    manufacturer = get_object(Manufacturer, slug=slug)
+
+    return manufacturer
+
+
+def author_list(*, filters=None) -> QuerySet[Author]:
+    filters = filters or {}
+
+    qs = Author.objects.all()
+
+    return qs
+
+
+def author_get_by_slug(slug) -> Optional[Author]:
+    author = get_object(Author, slug=slug)
+
+    return author
+
+
+def product_list(*, filters=None) -> QuerySet[Product]:
+    filters = filters or {}
+
+    qs = Product.objects.all()
+
+    return qs
+
+def product_get(tag_id) -> Optional[Product]:
+    product = get_object(Product, id=tag_id)
+
+    return product
+
+
+def product_get_by_slug(slug) -> Optional[Product]:
+    product = get_object(Product, slug=slug)
+
+    return product
+
+
+def attribute_value_get(attribute_value_id) -> Optional[AttributeValue]:
+    attribute_value = get_object(AttributeValue, id=attribute_value_id)
+
+    return attribute_value

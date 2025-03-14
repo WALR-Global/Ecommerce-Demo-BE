@@ -30,8 +30,7 @@ class Category(BaseModel):
     name = models.CharField(max_length=255, blank=True, null=True)
     slug = models.CharField(max_length=255, blank=True, null=True)
     language = models.CharField(max_length=10, default='en', blank=True, null=True)
-    translated_languages = models.JSONField(default=default_translated_languages, blank=True,
-                                            null=True)  # Use a callable for default value
+    translated_languages = models.JSONField(default=default_translated_languages, blank=True, null=True)
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
     details = models.TextField(null=True, blank=True)
     image = models.JSONField(default=list, blank=True, null=True)  # Assuming it's a JSON field
@@ -45,6 +44,7 @@ class Category(BaseModel):
 class Tag(BaseModel):
     id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
     name = models.CharField(max_length=255, blank=True, null=True)
+    language = models.CharField(max_length=10, default='en', blank=True, null=True)
     translated_languages = models.JSONField(default=default_translated_languages, blank=True, null=True)
     slug = models.SlugField(max_length=255, blank=True, null=True)
     details = models.TextField(blank=True, null=True)
@@ -83,9 +83,28 @@ class Manufacturer(BaseModel):
     language = models.CharField(max_length=10, default='en', blank=True, null=True)
     translated_languages = models.JSONField(default=default_translated_languages, blank=True, null=True)
     products_count = models.PositiveIntegerField(default=0)
-    is_approved = models.BooleanField(max_length=50)
+    is_approved = models.BooleanField(default=True)
     description = models.TextField(null=True, blank=True)
     website = models.CharField(max_length=255, null=True, blank=True)
+    image = models.JSONField(default=dict, blank=True, null=True)
+    cover_image = models.JSONField(default=dict, blank=True, null=True)
+
+    type = models.ForeignKey(Type, blank=True, null=True, on_delete=models.SET_NULL, default=None)
+
+    def __str__(self):
+        return self.name
+
+
+class Author(BaseModel):
+    id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
+    name = models.CharField(max_length=50)
+    slug = models.SlugField(unique=True)
+    language = models.CharField(max_length=10, default='en', blank=True, null=True)
+    translated_languages = models.JSONField(default=default_translated_languages, blank=True, null=True)
+    products_count = models.PositiveIntegerField(default=0)
+    is_approved = models.BooleanField(default=True)
+    bio = models.TextField(null=True, blank=True)
+    languages = models.CharField(max_length=50)
     image = models.JSONField(default=dict, blank=True, null=True)
     cover_image = models.JSONField(default=dict, blank=True, null=True)
 
@@ -93,7 +112,7 @@ class Manufacturer(BaseModel):
         return self.name
 
 
-class Product(models.Model):
+class Product(BaseModel):
     id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
@@ -105,7 +124,7 @@ class Product(models.Model):
     quantity = models.DecimalField(max_digits=10, decimal_places=2, blank=True, default=0)
     in_stock = models.BooleanField(default=True)
     is_taxable = models.BooleanField(default=False)
-    status = models.CharField(max_length=50, choices=[('publish', 'Publish'), ('draft', 'Draft')])
+    status = models.CharField(max_length=50, choices=[('publish', 'Publish'), ('draft', 'Draft')], default='publish')
     product_type = models.CharField(max_length=50, choices=[('variable', 'Variable'), ('simple', 'Simple')])
     unit = models.CharField(max_length=50, default='1 Stk', blank=True, null=True)
     image = models.JSONField(default=dict, blank=True, null=True)
@@ -113,10 +132,14 @@ class Product(models.Model):
     ratings = models.DecimalField(max_digits=3, decimal_places=2, default=0)
     total_reviews = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    language = models.CharField(max_length=10, default='en', blank=True, null=True)
+    translated_languages = models.JSONField(default=default_translated_languages, blank=True, null=True)
 
     type = models.ForeignKey(Type, blank=True, null=True, on_delete=models.SET_NULL, default=None)
     categories = models.ManyToManyField(Category, blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
+    author = models.ForeignKey(Author, blank=True, null=True, on_delete=models.SET_NULL, default=None)
+    manufacturer = models.ForeignKey(Manufacturer, blank=True, null=True, on_delete=models.SET_NULL, default=None)
 
     def __str__(self):
         return self.name

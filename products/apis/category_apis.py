@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from common.utils import parse_search_query, get_paginated_response
 from products.selectors import category_list, category_get_by_slug, category_get
+from products.serializers import TypeSerializer
 from products.services.category_services import category_create, category_update, category_delete
 
 
@@ -56,8 +57,9 @@ class CategoryDetailApi(APIView):
         image = serializers.JSONField()
         details = serializers.CharField()
         icon = serializers.CharField()
-        # type = TypeSerializer(required=False)
-        # department = DepartmentSerializer(required=False)
+        language = serializers.CharField()
+        translated_languages = serializers.JSONField()
+        type = TypeSerializer(required=False)
         # parent = CategorySerializer(required=False)
 
     def get(self, request, slug):

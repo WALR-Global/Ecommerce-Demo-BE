@@ -3,8 +3,8 @@ from typing import List
 from django.db import transaction
 
 from common.services import model_update
-from common.utils import get_object
-from products.models import Manufacturer
+from common.utils import get_object, resolve_foreign_keys
+from products.models import Manufacturer, Type
 
 
 @transaction.atomic
@@ -13,34 +13,44 @@ def manufacture_create(*, name: str,
                        description: str = None,
                        image: str = None,
                        cover_image: str = None,
-                       icon: str = None,
                        website: str = None,
+                       type_id: str = None,
                        ) -> Manufacturer:
     manufacture = Manufacturer.objects.create(name=name,
                                               slug=slug,
                                               description=description,
                                               image=image,
                                               cover_image=cover_image,
-                                              icon=icon,
                                               website=website,
+                                              type_id=type_id,
                                               )
 
     return manufacture
 
 
 @transaction.atomic
-def manufacture_update(*, manufacture: Manufacturer, data) -> Manufacturer:
+def manufacture_update(*, manufacturer: Manufacturer, data) -> Manufacturer:
     non_side_effect_fields: List[str] = [
         "name",
         "slug",
-        "details",
+        "description",
+        "website",
         "image",
-        "icon",
+        "cover_image",
     ]
 
-    manufacture, has_updated = model_update(instance=manufacture, fields=non_side_effect_fields, data=data)
+    # Handle foreign key fields separately
+    foreign_key_fields = {
+        "type_id": Type,
+    }
 
-    return manufacture
+    # Resolve foreign key fields
+    data = resolve_foreign_keys(data, foreign_key_fields)
+
+    all_fields = non_side_effect_fields + ["type"]
+    manufacturer, has_updated = model_update(instance=manufacturer, fields=all_fields, data=data)
+
+    return manufacturer
 
 
 @transaction.atomic

@@ -46,6 +46,10 @@ INSTALLED_APPS = [
     'systemconfig',
     'users',
     'products',
+    'layouts',
+    'shops',
+    'promotions',
+    'feedbacks',
 ]
 
 REST_FRAMEWORK = {
@@ -79,6 +83,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3003",
     "http://localhost:3006",
 ]
 

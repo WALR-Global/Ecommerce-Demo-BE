@@ -5,7 +5,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.utils import parse_search_query, get_paginated_response
-from products.selectors import tag_list, tag_get_by_slug, tag_get, manufacturer_list
+from products.selectors import tag_list, tag_get_by_slug, tag_get, manufacturer_list, manufacturer_get_by_slug
+from products.serializers import TypeSerializer
+from products.services.manufacturer_services import manufacture_create, manufacture_update
 from products.services.tag_services import tag_create, tag_update, tag_delete
 from users.permissions import IsSuperAdminOrStoreOwner
 
@@ -49,25 +51,19 @@ class ManufacturerDetailApi(APIView):
         id = serializers.CharField(required=True)
         name = serializers.CharField(required=True)
         slug = serializers.CharField(required=True)
-        details = serializers.CharField(required=True)
-        icon = serializers.CharField(required=True)
-        type = serializers.SerializerMethodField(required=False)
-
-        @staticmethod
-        def get_type(obj):
-            return {
-                'id': obj.type.id,
-                'name': obj.type.name,
-                'slug': obj.type.slug,
-            } if obj.type else None
+        description = serializers.CharField(required=True)
+        image = serializers.CharField(required=True)
+        language = serializers.CharField()
+        translated_languages = serializers.JSONField()
+        type = TypeSerializer(required=False)
 
     def get(self, request, slug):
-        tag = tag_get_by_slug(slug)
+        manufacture = manufacturer_get_by_slug(slug)
 
-        if tag is None:
+        if manufacture is None:
             raise Http404
 
-        data = self.OutputSerializer(tag).data
+        data = self.OutputSerializer(manufacture).data
 
         return Response(data)
 
@@ -76,9 +72,9 @@ class ManufacturerCreateApi(APIView):
     class InputSerializer(serializers.Serializer):
         name = serializers.CharField(required=True)
         slug = serializers.CharField(required=True)
-        details = serializers.CharField(required=True, allow_blank=True, allow_null=True)
+        website = serializers.CharField(required=True)
+        description = serializers.CharField(required=True, allow_blank=True, allow_null=True)
         image = serializers.JSONField(required=True, allow_null=True)
-        icon = serializers.JSONField(required=True, allow_null=True)
         type_id = serializers.IntegerField(required=True, allow_null=True)
 
     class OutputSerializer(serializers.Serializer):
@@ -89,11 +85,11 @@ class ManufacturerCreateApi(APIView):
         serializer = self.InputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tag = tag_create(
+        manufacture = manufacture_create(
             **serializer.validated_data
         )
 
-        data = self.OutputSerializer(tag).data
+        data = self.OutputSerializer(manufacture).data
 
         return Response(data)
 
@@ -101,22 +97,22 @@ class ManufacturerCreateApi(APIView):
 class ManufacturerUpdateApi(APIView):
 
     @transaction.atomic
-    def put(self, request, tag_id):
+    def put(self, request, slug):
         serializer = ManufacturerCreateApi.InputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tag = tag_get(tag_id)
+        manufacturer = manufacturer_get_by_slug(slug)
 
-        if tag is None:
+        if manufacturer is None:
             raise Http404
 
-        tag = tag_update(tag=tag, data=serializer.validated_data)
+        manufacturer = manufacture_update(manufacturer=manufacturer, data=serializer.validated_data)
 
         # Note: This shows a possible reusability for serializers between APIs
         # Usually, this is how we approach things, when building APIs at first
         # But at the very moment when we need to make a change to the output,
         # that's specific to this API, we'll introduce a separate OutputSerializer just for this API
-        data = ManufacturerCreateApi.OutputSerializer(tag).data
+        data = ManufacturerCreateApi.OutputSerializer(manufacturer).data
 
         return Response(data)
 

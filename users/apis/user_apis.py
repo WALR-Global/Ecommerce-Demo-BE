@@ -3,8 +3,8 @@ from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.pagination import LimitOffsetPagination, get_paginated_response
-from users.models import BaseUser
+from common.utils import parse_search_query, get_paginated_response
+from users.permissions import IsSuperAdminOrStoreOwner
 from users.selectors import user_get, user_list
 from users.services import user_create, user_update
 
@@ -29,32 +29,34 @@ class UserDetailApi(APIView):
 
 
 class UserListApi(APIView):
-    class Pagination(LimitOffsetPagination):
-        default_limit = 1
+    permission_classes = [IsSuperAdminOrStoreOwner]
 
     class FilterSerializer(serializers.Serializer):
         id = serializers.IntegerField(required=False)
-        is_admin = serializers.BooleanField(required=False, allow_null=True, default=None)
+
+    class OutputSerializer(serializers.Serializer):
+        id = serializers.UUIDField(required=True)
         email = serializers.EmailField(required=False)
 
-    class OutputSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = BaseUser
-            fields = ("id", "email", "is_admin")
-
     def get(self, request):
+        # Extract `search` query parameter
+        query_params = request.query_params
+        search_query = query_params.get("search", None)
+
+        # Parse `search` using the utility function
+        filters = parse_search_query(search_query)
+
         # Make sure the filters are valid, if passed
-        filters_serializer = self.FilterSerializer(data=request.query_params)
+        filters_serializer = self.FilterSerializer(data={**request.query_params, **filters})
         filters_serializer.is_valid(raise_exception=True)
 
         users = user_list(filters=filters_serializer.validated_data)
 
+        # Apply pagination
         return get_paginated_response(
-            pagination_class=self.Pagination,
             serializer_class=self.OutputSerializer,
             queryset=users,
             request=request,
-            view=self,
         )
 
 
